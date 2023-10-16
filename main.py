@@ -35,6 +35,7 @@ while 1:
 		followers_list.append(temp[1:-1]) # We remove first and last character (which is '\' in this case)
 
 	i += 1
+followers_list.sort()
 
 i = 1
 following_list = []
@@ -53,6 +54,7 @@ while 1:
 		following_list.append(temp[1:-1])
 
 	i += 1
+following_list.sort()
 
 
 # Prints 'amount_per_line' names per line, then prints a newline and so on
@@ -65,16 +67,18 @@ def printFormattedList(arg_list, amount_per_line):
 names_amount_per_line = 10
 print(Fore.RED + "Don't follow back:" + Fore.RESET)
 dont_follow_back = list(set(following_list) - set(followers_list)) # Set subtraction makes it easy
+dont_follow_back.sort()
 printFormattedList(dont_follow_back, names_amount_per_line)
 
-print(Fore.GREEN + "\nFans (you're not following them back):" + Fore.RESET)
+print(Fore.GREEN + "\nFans (you don't follow them back):" + Fore.RESET)
 not_following_back = list(set(followers_list) - set(following_list))
+not_following_back.sort()
 printFormattedList(not_following_back, names_amount_per_line)
 
 print(Fore.RED + "\nFollowers:" + Fore.RESET)
 printFormattedList(followers_list, names_amount_per_line)
-print("Sum: " + str(len(followers_list)) + "\n")
+print(Fore.RED + "Sum: " + str(len(followers_list)) + Fore.RESET + "\n")
 
 print(Fore.GREEN + "Following:" + Fore.RESET)
 printFormattedList(following_list, names_amount_per_line)
-print("Sum: " + str(len(following_list)))
+print(Fore.GREEN + "Sum: " + str(len(following_list)) + Fore.RESET)
