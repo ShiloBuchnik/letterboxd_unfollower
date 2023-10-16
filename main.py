@@ -4,10 +4,15 @@ import re # For regex
 import sys
 from colorama import Fore # For coloring output text
 
-url = sys.argv[1]
+try: # For running through the CLI
+	url = sys.argv[1]
+except IndexError: # For running through the .exe
+	url = input("Please enter your Letterboxd user URL: ")
+
 # Demanding a valid letterboxd user link. '^' means match from start, '$' means match from end
-if not re.search('^https://letterboxd.com/\w+/$', url):
+if not re.search(r'^https://letterboxd.com/\w+/$', url):
 	print("Invalid address, try again")
+	input("Enter any key...")
 	exit(-1)
 
 # Checking if user exists
@@ -15,6 +20,7 @@ user_html = requests.get(url)
 soup = BeautifulSoup(user_html.text, 'html.parser')
 if soup.find(string="Sorry, we can’t find the page you’ve requested."):
 	print("User doesn't exist, try again")
+	input("Enter any key...")
 	exit(-1)
 
 i = 1
@@ -30,7 +36,7 @@ while 1:
 
 	# We parse that line with regex to get only the name
 	for line in curr_page_list:
-		temp = re.search('/\w+/', str(line))
+		temp = re.search(r'/\w+/', str(line))
 		temp = temp.group()
 		followers_list.append(temp[1:-1]) # We remove first and last character (which is '\' in this case)
 
@@ -49,7 +55,7 @@ while 1:
 		break
 
 	for line in curr_page_list:
-		temp = re.search('/\w+/', str(line))
+		temp = re.search(r'/\w+/', str(line))
 		temp = temp.group()
 		following_list.append(temp[1:-1])
 
@@ -82,3 +88,5 @@ print(Fore.RED + "Sum: " + str(len(followers_list)) + Fore.RESET + "\n")
 print(Fore.GREEN + "Following:" + Fore.RESET)
 printFormattedList(following_list, names_amount_per_line)
 print(Fore.GREEN + "Sum: " + str(len(following_list)) + Fore.RESET)
+
+input("Enter any key...") # So that the .exe won't close immediately
