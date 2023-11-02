@@ -1,6 +1,5 @@
 ![Not available](https://user-images.githubusercontent.com/33762/190890947-fae23b13-1149-4572-a967-46575b2031c0.png)
-
-### This is a small web-scraper and web-automation tool for [Letterboxd](https://letterboxd.com/), written in Python3
+### This is a small web-scraping and web-automation tool for [Letterboxd](https://letterboxd.com), written in Python3
 
 Utilising BeautifulSoup for web-scraping and Selenium for web-automation;  
 this script gives you info about your followers\following, and allows you to automatically unfollow the ~~bastards~~ users who don't follow back.

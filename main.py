@@ -20,7 +20,7 @@ def printFormattedList(arg_list, amount_per_line):
 		names_to_print = arg_list[i: i + amount_per_line]
 		print(*names_to_print, sep=", ")
 
-def follow_scraping():
+def verifyURL():
 	try:  # For running through the CLI
 		url = sys.argv[1]
 	except IndexError:  # For running through the .exe
@@ -31,7 +31,11 @@ def follow_scraping():
 		input(Fore.RED + "Invalid address, terminating..." + Fore.RESET)
 		exit(-1)
 
-	session = requests.Session()
+	return url
+
+def follow_scraping():
+	url = verifyURL()
+	session = requests.Session() # Sessions are REALLY efficient if we want to make several requests to the same domain
 	user_html = session.get(url)
 	soup = BeautifulSoup(user_html.text, 'html.parser')
 	if soup.find(string="Sorry, we can’t find the page you’ve requested."):  # Checking if user exists
@@ -131,6 +135,7 @@ def unfollow(username, password, dont_follow_back):
 		wait.until(EC.visibility_of_element_located((By.ID, "add-new-button")))
 	except TimeoutException:
 		print(Fore.RED + "Wrong username or password" + Fore.RESET)
+		driver.quit()
 		return
 
 	# In this loop we unfollow every username
@@ -142,9 +147,9 @@ def unfollow(username, password, dont_follow_back):
 		# Anyway, without it, sometimes the driver won't be able to find the button for some reason
 		time.sleep(1)
 
-	driver.close()
+	driver.quit() # Close the driver instance completely. The script ends right after, but to be on the safe side...
 
-def verifyInput():
+def verifyYesNo():
 	character = input("\nDo you want to unfollow the users who don't follow you back? [Y/N] ")
 	while character != 'Y' and character != 'y' and character != 'N' and character != 'n':
 		character = input("Invalid input, please try again: ")
@@ -156,7 +161,7 @@ def main():
 
 	# We only enter if list is not empty and the user wished to proceed
 	# If the list is empty, we don't ask for proceeding, utilising short-circuiting
-	if dont_follow_back and verifyInput():
+	if dont_follow_back and verifyYesNo():
 		username = input("Please enter your username or email: ")
 		password = getpass.getpass("Please enter your password: ")
 		unfollow(username, password, dont_follow_back)
