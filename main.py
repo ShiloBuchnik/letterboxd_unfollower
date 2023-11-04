@@ -33,57 +33,44 @@ def verifyURL():
 
 	return url
 
+# Get all followers or following, depend on 3rd argument
+def getAllUsers(session, url, follower_following):
+	i = 1
+	users_list = []
+	# We iterate in this loop over the pages in "followers" section
+	while 1:
+		followers_html = session.get(f"{url}{follower_following}/page/{i}")  # This holds the raw HTML of current page
+		soup = BeautifulSoup(followers_html.text, 'html.parser')
+
+		curr_page_elements = soup.find_all('a', class_='name')  # Each line in here contains one follower's name
+		if not curr_page_elements:  # If it's empty, that means we ran out of pages, and we break
+			break
+
+		# We parse that line with regex to get only the name
+		for element in curr_page_elements:
+			temp = element.get("href")
+			users_list.append(temp[1:-1])
+
+		i += 1
+
+	users_list.sort()
+	return users_list
+
 def follow_scraping():
 	url = verifyURL()
 	session = requests.Session() # Sessions are REALLY efficient if we want to make several requests to the same domain
 	user_html = session.get(url)
 	soup = BeautifulSoup(user_html.text, 'html.parser')
-	if soup.find(string="Sorry, we can’t find the page you’ve requested."):  # Checking if user exists
+	if soup.find(string="Sorry, we can’t find the page you’ve requested."): # Checking if user exists
 		input(Fore.RED + "User doesn't exist, terminating..." + Fore.RESET)
 		exit(-1)
 
-	i = 1
-	followers_list = []
-	# We iterate in this loop over the pages in "followers" section
-	while 1:
-		followers_html = session.get(url + "followers/page/" + str(i))  # This holds the raw HTML of current page
-		soup = BeautifulSoup(followers_html.text, 'html.parser')
-
-		curr_page_list = soup.find_all(attrs={'class': 'avatar -a40'})  # Each line in here contains one follower's name
-		if not curr_page_list:  # If it's empty, that means we ran out of pages, and we break
-			break
-
-		# We parse that line with regex to get only the name
-		for line in curr_page_list:
-			temp = re.search(r'/\w+/', str(line))
-			temp = temp.group()
-			followers_list.append(temp[1:-1])  # We remove first and last character (which is '\' in this case)
-
-		i += 1
-	followers_list.sort()
-
-	i = 1
-	following_list = []
-	# This the same, only for the "following" section
-	while 1:
-		following_html = session.get(url + "following/page/" + str(i))
-		soup = BeautifulSoup(following_html.text, 'html.parser')
-
-		curr_page_list = soup.find_all(attrs={'class': 'avatar -a40'})
-		if not curr_page_list:
-			break
-
-		for line in curr_page_list:
-			temp = re.search(r'/\w+/', str(line))
-			temp = temp.group()
-			following_list.append(temp[1:-1])
-
-		i += 1
-	following_list.sort()
+	followers_list = getAllUsers(session, url, "followers")
+	following_list = getAllUsers(session, url, "following")
 
 	names_amount_per_line = 10
 	print(Fore.RED + "Don't follow back:" + Fore.RESET)
-	dont_follow_back = list(set(following_list) - set(followers_list))  # Set subtraction makes it easy
+	dont_follow_back = list(set(following_list) - set(followers_list)) # Set subtraction makes it easy
 	dont_follow_back.sort()
 	printFormattedList(dont_follow_back, names_amount_per_line)
 	print(Fore.RED + "Sum: " + str(len(dont_follow_back)) + Fore.RESET)
@@ -104,31 +91,29 @@ def follow_scraping():
 
 	return dont_follow_back
 
+# Rule of thumb, fastest selectors are (by order): ID, name, link text, CSS selector or class, XPATH
 def unfollow(username, password, dont_follow_back):
 	options = Options()
-
 	# Ignoring a certificate parsing problem that extended login duration.
 	options.add_experimental_option('excludeSwitches', ['enable-logging'])
 	# Disabling loading images, to make the script run faster.
 	options.add_argument('--blink-settings=imagesEnabled=false')
+	# Headless browsing. It's not really stable, sometimes not finding elements, so currently it's deactivated
+	#options.add_argument("--headless=new")
+	# Helps a bit with performance
+	options.add_argument("--disable-gpu")
+
 	driver = webdriver.Chrome(options)
-	# Using EC (wait until...) over sleep() makes the code MUCH more efficient. We set the timeout limit to 30.
-	wait = WebDriverWait(driver, 15)
+	# Using EC (wait until...) over sleep() makes the code much more efficient. We set the timeout limit to 10.
+	wait = WebDriverWait(driver, 10)
+	driver.get("https://letterboxd.com/sign-in")
 
-	driver.get("https://letterboxd.com")
-
-	# Pressing the login button
-	button = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "label")))
-	button.click()
-
-	username_field = driver.find_element(By.ID, "username")
-	password_field = driver.find_element(By.ID, "password")
-
+	# Logging in
+	username_field = wait.until(EC.element_to_be_clickable((By.ID, "signin-username")))
+	password_field = wait.until(EC.element_to_be_clickable((By.ID, "signin-password")))
 	username_field.send_keys(username)
 	password_field.send_keys(password)
-
-	# Submitting the input fields
-	password_field.send_keys(Keys.RETURN)
+	password_field.send_keys(Keys.RETURN) # Submitting the input fields by pressing 'Enter' on the password field
 
 	try:
 		# Makes us wait for the login to complete (this arbitrary element is visible only after a successful login)
@@ -140,11 +125,10 @@ def unfollow(username, password, dont_follow_back):
 
 	# In this loop we unfollow every username
 	for username in dont_follow_back:
-		driver.get("https://letterboxd.com/" + username)
-		button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a[data-action='/" + username + "/unfollow/']")))
+		driver.get(f"https://letterboxd.com/{username}")
+		button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a.js-button-following")))
 		button.click()
-		# When we sleep, we die and born again in the following morning.
-		# Anyway, without it, sometimes the driver won't be able to find the button for some reason
+		# Without 'sleep', sometimes the driver won't be able to find the button for some reason
 		time.sleep(1)
 
 	driver.quit() # Close the driver instance completely. The script ends right after, but to be on the safe side...
