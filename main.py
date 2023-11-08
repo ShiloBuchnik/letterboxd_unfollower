@@ -98,12 +98,17 @@ def unfollow(username, password, dont_follow_back):
 	options.add_experimental_option('excludeSwitches', ['enable-logging'])
 	# Disabling loading images, to make the script run faster.
 	options.add_argument('--blink-settings=imagesEnabled=false')
-	# Headless browsing. It's not really stable, sometimes not finding elements, so currently it's deactivated
-	#options.add_argument("--headless=new")
+	# Headless browsing. It became more stable after adding eager page loading, so it's enabled for now.
+	options.add_argument("--headless=new")
 	# Helps a bit with performance
 	options.add_argument("--disable-gpu")
+	# By default, the page load strategy is set to 'normal',
+	# which means the WebDriver waits until the entire page loads (HTML file and sub-resources are downloaded).
+	# We set it to 'eager', in which the WebDriver waits only until the element itself appears (HTML file is downloaded only).
+	# It makes a BIG difference in performance. Before this addition, the script would get stuck a lot, by waiting for the entire page.
+	options.page_load_strategy = 'eager'
 
-	driver = webdriver.Chrome(options)
+	driver = webdriver.Chrome(options=options)
 	# Using EC (wait until...) over sleep() makes the code much more efficient. We set the timeout limit to 10.
 	wait = WebDriverWait(driver, 10)
 	driver.get("https://letterboxd.com/sign-in")
@@ -117,7 +122,11 @@ def unfollow(username, password, dont_follow_back):
 
 	try:
 		# Makes us wait for the login to complete (this arbitrary element is visible only after a successful login)
-		wait.until(EC.visibility_of_element_located((By.ID, "add-new-button")))
+		# We use 'presence' and not 'visibility' because we only care if the element is present on the DOM.
+		# This makes things a *bit* faster
+		wait.until(EC.presence_of_element_located((By.ID, "add-new-button")))
+		# If the 'EC' above doesn't work, replace it with the 'EC' below
+		#wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "span.avatar.-a24")))
 	except TimeoutException:
 		print(Fore.RED + "Wrong username or password" + Fore.RESET)
 		driver.quit()
@@ -129,7 +138,7 @@ def unfollow(username, password, dont_follow_back):
 		button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a.js-button-following")))
 		button.click()
 		# Without 'sleep', sometimes the driver won't be able to find the button for some reason
-		time.sleep(1)
+		time.sleep(0.5)
 
 	driver.quit() # Close the driver instance completely. The script ends right after, but to be on the safe side...
 
@@ -147,10 +156,12 @@ def main():
 	# If the list is empty, we don't ask for proceeding, utilising short-circuiting
 	if dont_follow_back and verifyYesNo():
 		username = input("Please enter your username or email: ")
-		password = getpass.getpass("Please enter your password: ")
+		# getpass doesn't allow ctrl+c to be read, but it does allow right click pasting for some reason...
+		password = getpass.getpass("Please enter your password (for pasting, use right click, not ctrl+V): ")
+		print("Running, please wait...")
 		unfollow(username, password, dont_follow_back)
 
-	input("\nPress any key...") # So that the .exe won't close immediately
+	input("\nDone, Press any key...") # So that the .exe won't close immediately
 
 
 if __name__ == '__main__':
