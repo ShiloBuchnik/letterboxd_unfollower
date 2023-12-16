@@ -114,8 +114,8 @@ def unfollow(username, password, dont_follow_back):
 	driver.get("https://letterboxd.com/sign-in")
 
 	# Logging in
-	username_field = wait.until(EC.element_to_be_clickable((By.ID, "signin-username")))
-	password_field = wait.until(EC.element_to_be_clickable((By.ID, "signin-password")))
+	username_field = wait.until(EC.element_to_be_clickable((By.ID, "field-username")))
+	password_field = wait.until(EC.element_to_be_clickable((By.ID, "field-password")))
 	username_field.send_keys(username)
 	password_field.send_keys(password)
 	password_field.send_keys(Keys.RETURN) # Submitting the input fields by pressing 'Enter' on the password field
@@ -125,10 +125,8 @@ def unfollow(username, password, dont_follow_back):
 		# We use 'presence' and not 'visibility' because we only care if the element is present on the DOM.
 		# This makes things a *bit* faster
 		wait.until(EC.presence_of_element_located((By.ID, "add-new-button")))
-		# If the 'EC' above doesn't work, replace it with the 'EC' below
-		#wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, "span.avatar.-a24")))
 	except TimeoutException:
-		print(Fore.RED + "Wrong username or password" + Fore.RESET)
+		print(Fore.RED + "Wrong username or password, terminating..." + Fore.RESET)
 		driver.quit()
 		return
 

@@ -17,6 +17,7 @@ Then, you can run the script in one of two ways:
 
 After the stats are shown, you can use the automation tool to unfollow back.  
 For that you'll need to input username and password in order to login.  
-**Those are not saved anywhere, and are used solely by the script.**
+**Those are not saved anywhere, and are used solely by the script.**  
+*Note the password field is "secure", i.e. your input doesn't appear on screen.  
 
-Lastly, let the automation tool run for several minutes, and you're all done :D
+Lastly, let the automation tool run, and you're all done :D
